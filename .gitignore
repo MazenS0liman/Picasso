@@ -1,0 +1,67 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+env/
+
+# IDEs and editors
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs and runtime data
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Directories for data
+datasets/
+weights/
+soundfonts/
+mlartifacts/
+checkpoints/
+
+# Model checkpoints
+*.pth
+*.pt
+
+# Database files
+*.db
+
+# Environment variables
+.env
+
+# Docker
+.docker/
+
+# Miscellaneous
+.DS_Store
+Thumbs.db 
+
+# Node JS
+node_modules
+package-lock.json
