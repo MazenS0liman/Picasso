@@ -180,7 +180,7 @@ class StyleWGANHparams:
     """
     Hyperparameters for the style-based WGAN-GP with adaptive discriminator augmentation.
     """
-    IMAGE_SIZE = 128        # power of two >= 8
+    IMAGE_SIZE = 64         # power of two >= 8 (64 fits ~3 GB at batch 16; 128 needs batch <= 8 on 8 GB)
     NZ = 256                # latent / w size
     NGF = 32                # generator width (channels = NGF*512/res, capped at NGF*8)
     NDF = 32                # critic width
@@ -264,7 +264,7 @@ class StyleWGANTrainer:
         self,
         hparams=None,
         datapath=None,
-        batch_size=32,
+        batch_size=16,
         ckpt_path="checkpoints/stylewgan_ckpt.pt",
         sample_dir="samples",
         load_from_checkpoint=False,
@@ -620,7 +620,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train a style-based WGAN-GP with ADA")
     parser.add_argument("--datapath", default=None, help="Image folder root (default: auto-find)")
     parser.add_argument("--epochs", type=int, default=5)
-    parser.add_argument("--batch_size", type=int, default=32)
+    parser.add_argument("--batch_size", type=int, default=16)
     parser.add_argument("--image_size", type=int, default=StyleWGANHparams.IMAGE_SIZE)
     parser.add_argument("--n_samples", type=int, default=None)
     parser.add_argument("--no_ada", action="store_true", help="Disable adaptive augmentation")
