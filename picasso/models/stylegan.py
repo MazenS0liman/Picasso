@@ -20,7 +20,7 @@ def channels_at(res, base, cap_mult=8):
     """
     Number of feature maps at a given resolution (more channels at low resolution).
     """
-    return min(base * 512 // res, base * cap_mult)
+    return min(base * 256 // res, base * cap_mult)
 
 
 # ——————————————————————————————————————————————————————————————
@@ -80,21 +80,22 @@ class ModulatedConv2d(nn.Module):
         self.modulation = EqualLinear(w_dim, in_ch, bias_init=1.0)
 
     def forward(self, x, w):
-        b, c, _, _ = x.shape
-        style = self.modulation(w).view(b, 1, c, 1, 1)
-        weight = self.scale * self.weight * style  # (b, out, in, k, k)
-        if self.demodulate:
-            demod = torch.rsqrt(weight.pow(2).sum(dim=(2, 3, 4)) + 1e-8)
-            weight = weight * demod.view(b, self.out_ch, 1, 1, 1)
+        # Non-fused modulation: scale the input activations, run one ordinary (non-grouped)
+        # convolution, then demodulate the output. Mathematically identical to modulating the
+        # weights per sample, but much faster (grouped convs are very slow on CPU).
+        b = x.size(0)
+        s = self.modulation(w)  # (b, in)
+        weight = self.weight[0] * self.scale  # (out, in, k, k)
 
         if self.upsample:
             x = F.interpolate(x, scale_factor=2, mode="bilinear", align_corners=False)
 
-        h, wd = x.shape[2:]
-        x = x.reshape(1, b * c, h, wd)
-        weight = weight.reshape(b * self.out_ch, c, self.kernel_size, self.kernel_size)
-        out = F.conv2d(x, weight, padding=self.kernel_size // 2, groups=b)
-        return out.view(b, self.out_ch, *out.shape[2:])
+        out = F.conv2d(x * s.view(b, self.in_ch, 1, 1), weight, padding=self.kernel_size // 2)
+        if self.demodulate:
+            w_sq = weight.pow(2).sum(dim=(2, 3))  # (out, in)
+            demod = torch.rsqrt(s.pow(2) @ w_sq.t() + 1e-8)  # (b, out)
+            out = out * demod.view(b, self.out_ch, 1, 1)
+        return out
 
 
 class NoiseInjection(nn.Module):
