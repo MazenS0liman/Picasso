@@ -366,6 +366,7 @@ class StyleWGANTrainer:
         self.g_steps = 0
 
         if load_from_checkpoint and os.path.isfile(self.ckpt_path):
+            print(f"Loading checkpoint from {self.ckpt_path}...")
             self.load()
 
     def save(self, ckpt_path=None):
@@ -531,7 +532,12 @@ class StyleWGANTrainer:
         plt.close()
         return path
 
-    def fit(self, epochs, log_every=50):
+    def fit(
+        self, 
+        epochs, 
+        ckpt_path=None,
+        log_every=50
+    ):
         """
         Trains for the requested number of additional epochs.
         """
@@ -600,13 +606,13 @@ class StyleWGANTrainer:
                 start = time.time()
 
                 self.save_samples(f"epoch_{self.epochs_trained:04d}")
-                self.save()  # checkpoint every epoch so crashes lose little
+                self.save(ckpt_path=ckpt_path)
 
         except KeyboardInterrupt:
             pass
 
         print("Checkpointing...")
-        self.save()
+        self.save(ckpt_path=ckpt_path)
         self.plot_losses()
         print("Done")
         print(time.strftime("%Y-%m-%d %H:%M"))
