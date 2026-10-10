@@ -26,19 +26,34 @@ def channels_at(res, base, cap_mult=8):
 # ——————————————————————————————————————————————————————————————
 # Building blocks
 class PixelNorm(nn.Module):
+    """
+    Pixelwise feature vector normalization layer.
+    Normalizes each pixel's feature vector to unit length.
+    """
     def forward(self, x):
         return x * torch.rsqrt(x.pow(2).mean(dim=1, keepdim=True) + 1e-8)
 
 
 class LeakyReLU(nn.Module):
-    """Leaky ReLU with gain sqrt(2) to keep activation variance stable."""
+    """
+    Leaky ReLU with gain sqrt(2) to keep activation variance stable.
+    """
     def forward(self, x):
         return F.leaky_relu(x, 0.2) * SQRT2
 
 
 class EqualLinear(nn.Module):
-    """Linear layer with equalized learning rate."""
-    def __init__(self, in_dim, out_dim, bias_init=0.0, lr_mul=1.0, activation=False):
+    """
+    Linear layer with equalized learning rate.
+    """
+    def __init__(
+        self, 
+        in_dim,
+        out_dim,
+        bias_init=0.0,
+        lr_mul=1.0,
+        activation=False
+    ):
         super().__init__()
         self.weight = nn.Parameter(torch.randn(out_dim, in_dim) / lr_mul)
         self.bias = nn.Parameter(torch.full((out_dim,), float(bias_init)))
@@ -54,8 +69,17 @@ class EqualLinear(nn.Module):
 
 
 class EqualConv2d(nn.Module):
-    """Conv layer with equalized learning rate."""
-    def __init__(self, in_ch, out_ch, kernel_size, padding=0, bias=True):
+    """
+    Conv layer with equalized learning rate.
+    """
+    def __init__(
+        self, 
+        in_ch, 
+        out_ch, 
+        kernel_size, 
+        padding=0, 
+        bias=True
+    ) -> None:
         super().__init__()
         self.weight = nn.Parameter(torch.randn(out_ch, in_ch, kernel_size, kernel_size))
         self.bias = nn.Parameter(torch.zeros(out_ch)) if bias else None
@@ -68,7 +92,15 @@ class EqualConv2d(nn.Module):
 
 class ModulatedConv2d(nn.Module):
     """StyleGAN2 modulated convolution with optional weight demodulation and 2x upsampling."""
-    def __init__(self, in_ch, out_ch, kernel_size, w_dim, demodulate=True, upsample=False):
+    def __init__(
+        self, 
+        in_ch, 
+        out_ch, 
+        kernel_size, 
+        w_dim, 
+        demodulate=True, 
+        upsample=False
+    ) -> None:
         super().__init__()
         self.in_ch = in_ch
         self.out_ch = out_ch

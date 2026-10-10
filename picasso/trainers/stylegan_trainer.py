@@ -194,6 +194,7 @@ class StyleWGANHparams:
     MIXING_PROB = 0.9       # style-mixing regularization
     EMA_DECAY = 0.999
     MBSTD_GROUP = 0         # minibatch-stddev in critic (0 = off, recommended with WGAN-GP)
+    
     # --- Adaptive Discriminator Augmentation
     ADA = True
     ADA_P_INIT = 0.0        # starting (or fixed, if ADA=False) augmentation probability
@@ -226,7 +227,7 @@ class StyleWGANHparams:
         ada_kimg=ADA_KIMG,
         val_frac=VAL_FRAC,
         augmentations=AUGMENTATIONS
-    ):
+    ) -> None:
         self.image_size = image_size
         self.nz = nz
         self.ngf = ngf
