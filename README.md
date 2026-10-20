@@ -6,6 +6,14 @@ the progression from training a GAN from scratch, to a style-based WGAN, to
 adapting a pretrained latent diffusion model with parameter-efficient
 fine-tuning.
 
+<div align="center">
+  <img src="./static/logo.png" alt="Picasso Logo" width="200"/>
+
+  ![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)
+  ![Pytorch](https://img.shields.io/badge/Pytorch-FF8C00?logo=pytorch&logoColor=white)
+</div>  
+
+
 ## What this project demonstrates
 
 | Model | Training approach | Notebook |
@@ -30,8 +38,6 @@ fine-tuning.
 
 ```text
 picasso/
-├── datasets/
-│   └── art-nouveau/             # Art Nouveau image collection
 ├── notebooks/
 │   ├── dcgan.ipynb              # DCGAN training and sampling
 │   ├── stylegan.ipynb           # Style-based WGAN-GP + ADA
@@ -39,13 +45,12 @@ picasso/
 ├── picasso/
 │   ├── models/                  # GAN, augmentation, and diffusion modules
 │   └── trainers/                # DCGAN and StyleGAN training loops
-├── checkpoints/                 # Example GAN checkpoints
 └── samples/                     # Training/sample visualizations
 ```
 
 ## Getting started
 
-The core GAN experiments support Python 3.10–3.13. Install the project
+The core experiments support Python 3.10–3.13. Install the project
 dependencies with Poetry:
 
 ```bash
@@ -64,23 +69,65 @@ Launch Jupyter from the repository root:
 poetry run jupyter lab
 ```
 
-Then open one of the notebooks in [`notebooks`](./notebooks). The GAN
-notebooks can run on CPU, although training is substantially faster with a
-CUDA-capable GPU.
+Then open one of the notebooks in [`notebooks`](./notebooks).
 
-### Latent diffusion fine-tuning
+## Available Models
 
-Open [`notebooks/finetune_latent_diffusion.ipynb`](./notebooks/finetune_latent_diffusion.ipynb)
-in Kaggle, Colab, or another GPU environment. The notebook:
+### Deep Convolutional Generative Adversarial Network (DCGAN)
 
-1. Downloads or reuses the `art-nouveau` image folder.
-2. Loads Stable Diffusion 1.5 from the Hugging Face Hub.
-3. Adds LoRA adapters to the UNet attention layers.
-4. Generates baseline samples, fine-tunes the adapters, and compares results.
-5. Saves checkpoints and demonstrates loading the LoRA weights for inference.
+### StyleGAN2-ADA (Adaptive Discriminator Augmentation)
 
-The default configuration targets 512px images, batch size 1, mixed precision,
-and gradient checkpointing. A GPU with approximately 6–8 GB of memory is
-recommended; reduce the resolution if necessary. The diffusion notebook
-installs its additional `diffusers`, `peft`, `accelerate`, and `safetensors`
-dependencies in the notebook environment.
+<img src="./samples/style_gan_output.png" alt="Sample 1"/>
+
+
+### Finetuned Stable Diffusion
+
+The [`finetune_latent_diffusion.ipynb`](./notebooks/finetune_latent_diffusion.ipynb)
+notebook adapts Stable Diffusion 1.5 to the Art Nouveau collection with
+parameter-efficient LoRA fine-tuning. It does not train a diffusion model from
+scratch: the original model weights remain frozen and only small, trainable
+low-rank adapters are added to the UNet attention layers.
+
+The notebook follows this process:
+
+1. **Set up the runtime.** Install `diffusers`, `peft`, `transformers`,
+   `accelerate`, and `safetensors`, then run on a CUDA GPU. The default
+   configuration targets a 512 x 512 image size, batch size 1, gradient
+   accumulation of 4, and 2,000 optimizer steps.
+2. **Download and prepare the data.** It downloads the `art-nouveau` folder
+   from the `StyleGender/StyleGender-Dataset` Hugging Face dataset (or reuses
+   an existing local copy). Images are discovered recursively, resized so the
+   short side is 512 pixels, center-cropped, optionally flipped, and normalized
+   to `[-1, 1]`. Each image uses a same-name `.txt` sidecar caption when
+   available; otherwise the default caption, `an illustration in art nouveau
+   style`, is used.
+3. **Load the pretrained components.** Stable Diffusion's VAE, UNet, CLIP
+   tokenizer, text encoder, and noise scheduler are loaded from the Hub. The
+   VAE converts images into latent representations and the text encoder
+   provides prompt conditioning; the VAE and text encoder are kept frozen.
+4. **Attach LoRA and define the objective.** LoRA adapters (rank 16 by
+   default) are attached to the UNet. For each batch, the notebook encodes the
+   images into latents, samples a random diffusion timestep and Gaussian noise,
+   adds that noise to the latents, and trains the UNet to predict the noise
+   using a weighted mean-squared-error loss. Mixed precision, gradient
+   checkpointing, gradient accumulation, and min-SNR weighting reduce memory
+   use and improve training efficiency.
+5. **Compare before and after.** Baseline images are generated before training
+   with fixed prompts and seeds. During training, validation images are
+   regenerated every 500 steps, and the loss history is plotted so the style
+   adaptation can be compared without changing the sampling conditions.
+6. **Save and reuse the adapter.** The notebook saves
+   `lora_output/pytorch_lora_weights.safetensors` and a resumable
+   `training_state.pt` checkpoint every 500 steps and at the end of training.
+   For inference, it loads a fresh Stable Diffusion 1.5 pipeline and applies
+   the saved LoRA weights; the LoRA scale can be adjusted from the base model
+   (`0`) toward the full adapted style (`1`).
+
+Prompt: an illustration in art nouveau style, a young woman holding a lantern among flowers 
+
+<img src="./samples/stable_diffusion_output_3.png" alt="Sample 1"/>
+
+
+Prompt: an illustration in art nouveau style, a cat in a forest with flowers and butterflies
+
+<img src="./samples/stable_diffusion_output_2.png" alt="Sample 2"/>
