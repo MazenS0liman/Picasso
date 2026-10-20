@@ -11,6 +11,7 @@ fine-tuning.
 
   ![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)
   ![Pytorch](https://img.shields.io/badge/Pytorch-FF8C00?logo=pytorch&logoColor=white)
+  ![HuggingFace](https://img.shields.io/badge/HuggingFace-FFD21E?logo=huggingface&logoColor=white)
 </div>  
 
 
