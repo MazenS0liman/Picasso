@@ -189,11 +189,16 @@ The notebook follows this process:
    the saved LoRA weights; the LoRA scale can be adjusted from the base model
    (`0`) toward the full adapted style (`1`).
 
-Prompt: an illustration in art nouveau style, a young woman holding a lantern among flowers 
+<div style="padding: 15px; border-left: 5px solid #8a2be2; background-color: #f3e8ff; border-radius: 4px; margin: 10px 0;">
+    <strong style="color: #140522;">🔮 PROMPT</strong><br>
+    <span style="color: #180827;">An illustration in art nouveau style, a young woman holding a lantern among flowers.</span>
+</div>
 
 <img src="./samples/stable_diffusion_output_3.png" alt="Sample 1"/>
 
-
-Prompt: an illustration in art nouveau style, a cat in a forest with flowers and butterflies
+<div style="padding: 15px; border-left: 5px solid #8a2be2; background-color: #f3e8ff; border-radius: 4px; margin: 10px 0;">
+    <strong style="color: #140522;">🔮 PROMPT</strong><br>
+    <span style="color: #180827;">An illustration in art nouveau style, a cat in a forest with flowers and butterflies.</span>
+</div>
 
 <img src="./samples/stable_diffusion_output_2.png" alt="Sample 2"/>
