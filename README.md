@@ -18,13 +18,11 @@ fine-tuning.
 
 | Model | Training approach | Notebook |
 | --- | --- | --- |
-| DCGAN | Convolutional generator and discriminator trained from scratch | [`notebooks/dcgan.ipynb`](./notebooks/dcgan.ipynb) |
 | StyleGAN | Style-based generator with WGAN-GP and adaptive discriminator augmentation (ADA) | [`notebooks/stylegan.ipynb`](./notebooks/stylegan.ipynb) |
 | Latent diffusion | Stable Diffusion 1.5 fine-tuned with LoRA adapters on Art Nouveau images | [`notebooks/finetune_latent_diffusion.ipynb`](./notebooks/finetune_latent_diffusion.ipynb) |
 
 ## Highlights
 
-- Trains a baseline DCGAN at low resolution and saves resumable weights.
 - Trains a style-based WGAN with gradient penalty, style mixing, and optional
   ADA to improve stability on a relatively small image collection.
 - Fine-tunes only low-rank LoRA adapters in the UNet attention layers of
@@ -39,19 +37,25 @@ fine-tuning.
 ```text
 picasso/
 ├── notebooks/
-│   ├── dcgan.ipynb              # DCGAN training and sampling
 │   ├── stylegan.ipynb           # Style-based WGAN-GP + ADA
-│   └── finetune_latent_diffusion.ipynb
+│   └── finetune_latent_diffusion.ipynb  # Stable Diffusion + LoRA
 ├── picasso/
+│   ├── data/                    # Dataset download utilities
 │   ├── models/                  # GAN, augmentation, and diffusion modules
-│   └── trainers/                # DCGAN and StyleGAN training loops
-└── samples/                     # Training/sample visualizations
+│   └── trainers/                # Reusable training and inference loops
+├── checkpoints/                 # Saved model and LoRA weights
+├── datasets/                    # Local datasets (not required to clone)
+└── samples/                     # Training and sample visualizations
 ```
 
 ## Getting started
 
-The core experiments support Python 3.10–3.13. Install the project
-dependencies with Poetry:
+The project requires Python 3.10–3.13. A CUDA-capable GPU is recommended for
+training; the StyleGAN code automatically uses CUDA when available, while
+diffusion fine-tuning requires a GPU unless it is explicitly run as a smoke
+test with `--allow-cpu`.
+
+Install the project dependencies with Poetry:
 
 ```bash
 poetry install
@@ -71,11 +75,73 @@ poetry run jupyter lab
 
 Then open one of the notebooks in [`notebooks`](./notebooks).
 
+### Downloading data
+
+The download helper can retrieve selected files or folders from any Hugging
+Face Hub repository. From the repository root, run:
+
+```bash
+python picasso/data/download_data.py <owner>/<dataset> \
+  --prefix <folder> --out datasets
+```
+
+Use `--dry-run` to inspect the files and total size before downloading. The
+Art Nouveau training data should be placed under `datasets/art-nouveau` for
+the diffusion trainer, or under an image-folder directory for the StyleGAN
+trainer.
+
+### Running the trainers
+
+StyleGAN training:
+
+```bash
+python picasso/trainers/stylegan_trainer.py \
+  --datapath datasets/art-nouveau \
+  --epochs 5 \
+  --ckpt_path checkpoints/stylewgan_ckpt.pt
+```
+
+Resume from the checkpoint with `--resume`. Disable adaptive augmentation with
+`--no_ada`.
+
+LoRA fine-tuning:
+
+```bash
+python picasso/trainers/sd_lora_trainer.py finetune \
+  --data datasets/art-nouveau \
+  --out checkpoints/lora_output
+```
+
+The fine-tuning command saves LoRA weights, resumable training state,
+validation samples, and loss plots in the output directory. Generate images
+later without the dataset:
+
+```bash
+python picasso/trainers/sd_lora_trainer.py generate \
+  "an illustration in art nouveau style, a cat in a flower garden" \
+  --out-dir checkpoints/lora_output \
+  --scales 0 0.5 1
+```
+
 ## Available Models
 
-### Deep Convolutional Generative Adversarial Network (DCGAN)
-
 ### StyleGAN2-ADA (Adaptive Discriminator Augmentation)
+
+This implementation combines a StyleGAN2-style generator with a WGAN-GP
+critic. A learned mapping network transforms the latent vector `z` into the
+intermediate style space `w`; those style vectors modulate the convolutional
+layers at each resolution, while skip-connected ToRGB layers progressively
+build the image from a learned constant input. During training, style mixing
+regularization can use two latent vectors at different layers, and the
+exponential moving average of the generator is used for sampling.
+
+The critic is trained with five updates per generator update using the Wasserstein
+objective, a gradient penalty, and a small drift penalty. Both real and
+generated images pass through the differentiable augmentation pipeline, which
+supports geometric and color transforms. ADA adjusts the augmentation
+probability from held-out real-image statistics to reduce discriminator
+overfitting on the relatively small Art Nouveau dataset. The default training
+resolution is 64 x 64.
 
 <img src="./samples/style_gan_output.png" alt="Sample 1"/>
 
